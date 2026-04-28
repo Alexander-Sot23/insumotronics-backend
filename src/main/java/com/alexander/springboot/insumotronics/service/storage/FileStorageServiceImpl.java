@@ -239,4 +239,3 @@ public class FileStorageServiceImpl implements FileStorageService{
         return withoutTimestamp.substring(secondUnderscore + 1);
     }
 }
-
