@@ -11,6 +11,8 @@ import com.alexander.springboot.insumotronics.repository.MyUserRepository;
 import com.alexander.springboot.insumotronics.service.CartService;
 import com.alexander.springboot.insumotronics.exception.CartNotFoundException;
 import com.alexander.springboot.insumotronics.exception.MyUserNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class CartServiceImpl implements CartService {
 
     private final CartRepository repository;
     private final MyUserRepository userRepository;
+    private final Logger log = LoggerFactory.getLogger(CartServiceImpl.class);
 
     public CartServiceImpl(CartRepository repository, MyUserRepository userRepository) {
         this.repository = repository;
@@ -38,6 +41,15 @@ public class CartServiceImpl implements CartService {
             return convertToDTO(cart);
         });
     }
+
+    @Override
+    public java.util.Optional<CartM> findById(UUID id) {
+        return repository.findById(id).map(cart -> {
+            recalculateTotalPrice(cart);
+            return convertToDTO(cart);
+        });
+    }
+
 
     @Override
     public Page<CartM> findByUserId(UUID userId, Pageable pageable) {
@@ -74,15 +86,8 @@ public class CartServiceImpl implements CartService {
         cart.setTotalPrice(0.0f);
         Cart savedCart = repository.save(cart);
         recalculateTotalPrice(savedCart);
+        log.info("Cart creado: {}", savedCart.getTotalPrice());
         return convertToDTO(savedCart);
-    }
-
-    @Override
-    public java.util.Optional<CartM> findById(UUID id) {
-        return repository.findById(id).map(cart -> {
-            recalculateTotalPrice(cart);
-            return convertToDTO(cart);
-        });
     }
 
     @Override
@@ -90,6 +95,7 @@ public class CartServiceImpl implements CartService {
         Cart cart = repository.findById(id)
                 .orElseThrow(() -> new CartNotFoundException("Cart with ID: " + id + ", not found."));
         repository.delete(cart);
+        log.info("Cart eliminado: {}", id);
     }
 
     private void recalculateTotalPrice(Cart cart) {

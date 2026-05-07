@@ -16,6 +16,8 @@ import com.alexander.springboot.insumotronics.repository.ReserveRepository;
 import com.alexander.springboot.insumotronics.service.email.EmailService;
 import com.alexander.springboot.insumotronics.service.ReserveService;
 import jakarta.mail.MessagingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +35,7 @@ public class ReserveServiceImpl implements ReserveService {
     private final ReserveRepository reserveRepository;
     private final CartRepository cartRepository;
     private final EmailService emailService;
+    private final Logger log =  LoggerFactory.getLogger(ReserveServiceImpl.class);
 
     @Autowired
     public ReserveServiceImpl(ReserveRepository reserveRepository,
@@ -133,6 +136,8 @@ public class ReserveServiceImpl implements ReserveService {
         cart.setTotalPrice(0.0f);
         cartRepository.save(cart);
 
+        log.info("checkoutCart con CartID: " + savedReserve.getId());
+
         return convertToDTO(savedReserve);
     }
 
@@ -153,7 +158,9 @@ public class ReserveServiceImpl implements ReserveService {
                     reserve.getMyUser().getEmail(),
                     reserve.getMyUser().getName(),
                     "Su pedido ha sido confirmado. Total a pagar: " + reserve.getTotal());
+            log.info("Pedido confirmado: {} ReserveId", id);
         } catch (MessagingException ex) {
+            log.warn("Error al enviar correo de confirmacion {}", ex.getMessage());
             throw new RuntimeException("Error sending confirmation email", ex);
         }
 
@@ -176,7 +183,9 @@ public class ReserveServiceImpl implements ReserveService {
                     reserve.getMyUser().getEmail(),
                     reserve.getMyUser().getName(),
                     message);
+            log.info("Reserva cancelada: {}", id);
         } catch (MessagingException ex) {
+            log.warn("Error al enviar correo de cancelacion {}", ex.getMessage());
             throw new RuntimeException("Error sending cancellation email", ex);
         }
 

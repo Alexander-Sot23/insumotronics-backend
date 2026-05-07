@@ -13,7 +13,6 @@ services:
       MINIO_ROOT_PASSWORD: password123
     volumes:
       - minio-data:/data
-    restart: unless-stopped
 
 volumes:
   minio-data:

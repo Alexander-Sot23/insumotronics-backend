@@ -11,6 +11,8 @@ import com.alexander.springboot.insumotronics.webtoken.JWTService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,8 @@ public class LoginController {
 
     @Autowired
     private JWTService jwtService;
+
+    private final Logger log = LoggerFactory.getLogger(LoginController.class);
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateAndGetToken(@RequestPart(value = "sendData") String sendData) {
@@ -79,6 +83,8 @@ public class LoginController {
                     loginFormModel.password()
             ));
 
+            log.info("Usuario {} intentando iniciar sesion", adminUser.getCode());
+
             if (authentication.isAuthenticated()) {
                 // Generar token con el code
                 String token = jwtService.generateToken(adminUser);
@@ -104,17 +110,20 @@ public class LoginController {
                 }
                 myUserRepository.save(adminUser);
 
+                log.info("Usuario {} loggeado con exito", adminUser.getCode());
+
                 return ResponseEntity.ok(response);
             } else {
+                log.warn("Usuario {} intentando iniciar sesion", adminUser.getCode());
                 throw new UsernameNotFoundException("Credenciales invalidas.");
             }
 
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Authentication failed: " + e.getMessage());
+            log.error("Error al iniciar sesion {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
     }
 
 }
-

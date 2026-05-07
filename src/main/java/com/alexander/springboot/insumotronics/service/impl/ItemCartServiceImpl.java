@@ -16,6 +16,8 @@ import com.alexander.springboot.insumotronics.exception.CartNotFoundException;
 import com.alexander.springboot.insumotronics.exception.ItemCartNotFoundException;
 import com.alexander.springboot.insumotronics.exception.MyUserNotFoundException;
 import com.alexander.springboot.insumotronics.exception.ProductNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class ItemCartServiceImpl implements ItemCartService {
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final MyUserRepository userRepository;
+    private final Logger log = LoggerFactory.getLogger(ItemCartServiceImpl.class);
 
     public ItemCartServiceImpl(ItemCartRepository repository,
                                CartRepository cartRepository,
@@ -84,10 +87,12 @@ public class ItemCartServiceImpl implements ItemCartService {
         itemCart.setProduct(product);
         itemCart.setQuantity(itemCartM.quantity());
         ItemCart saved = repository.save(itemCart);
-        // Force refresh of cart to get updated items
+
         Cart refreshedCart = cartRepository.findById(cart.getId())
                 .orElseThrow(() -> new CartNotFoundException("Cart with ID: " + cart.getId() + ", not found."));
         recalculateCartTotal(refreshedCart);
+
+        log.info("ItemCart creado: {}", saved.getId());
         return convertToDTO(saved);
     }
 
@@ -122,6 +127,8 @@ public class ItemCartServiceImpl implements ItemCartService {
         Cart refreshedCart = cartRepository.findById(cart.getId())
                 .orElseThrow(() -> new CartNotFoundException("Cart with ID: " + cart.getId() + ", not found."));
         recalculateCartTotal(refreshedCart);
+
+        log.info("Se agrego el item: {}, al carrito: {}", itemCart.getId(), cart.getId());
         return convertToDTO(saved);
     }
 
@@ -165,6 +172,8 @@ public class ItemCartServiceImpl implements ItemCartService {
         Cart refreshedCart = cartRepository.findById(cart.getId())
                 .orElseThrow(() -> new CartNotFoundException("Cart with ID: " + cart.getId() + ", not found."));
         recalculateCartTotal(refreshedCart);
+
+        log.info("ItemCart eliminado: {}", itemCart.getId());
     }
 
     private void recalculateCartTotal(Cart cart) {

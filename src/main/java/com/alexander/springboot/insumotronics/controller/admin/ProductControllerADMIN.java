@@ -245,11 +245,14 @@ public class ProductControllerADMIN {
     }
 
     /**
-     * Valida que el archivo sea una imagen válida (PNG, JPG, JPEG)
+     * Valida que el archivo sea una imagen válida (PNG, JPG, JPEG, SVG)
      */
     private boolean isValidImageFile(MultipartFile file){
         FileType fileType = fileStorageService.extractExtension(file.getOriginalFilename());
-        return fileType == FileType.PNG || fileType == FileType.JPG || fileType == FileType.JPEG;
+        return fileType == FileType.PNG ||
+                fileType == FileType.JPG ||
+                fileType == FileType.JPEG ||
+                fileType == FileType.SVG;
     }
 
     /**

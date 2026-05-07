@@ -7,6 +7,8 @@ package com.alexander.springboot.insumotronics.controller.admin;
 import com.alexander.springboot.insumotronics.dto.MyUserDTO;
 import com.alexander.springboot.insumotronics.exception.MyUserNotFoundException;
 import com.alexander.springboot.insumotronics.service.MyUserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +28,8 @@ public class MyUserControllerADMIN {
 
     @Autowired
     private MyUserService service;
+
+    private final Logger log = LoggerFactory.getLogger(MyUserControllerADMIN.class.getName());
 
     @GetMapping
     public ResponseEntity<Page<MyUserDTO>> getAll(

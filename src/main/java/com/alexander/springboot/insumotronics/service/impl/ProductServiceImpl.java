@@ -8,6 +8,8 @@ import com.alexander.springboot.insumotronics.model.UpdateProductM;
 import com.alexander.springboot.insumotronics.repository.ProductRepository;
 import com.alexander.springboot.insumotronics.service.ProductService;
 import com.alexander.springboot.insumotronics.service.storage.FileStorageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +26,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class ProductServiceImpl implements ProductService {
+
+    private final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
 
     @Autowired
     private ProductRepository repository;
@@ -55,6 +59,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductDTO create(CreateProductM productM) {
         Product product = convertToModel(productM);
+        log.info ("Product creado: {}", product.getId());
         return convertToDTO(repository.save(product));
     }
 
@@ -73,6 +78,7 @@ public class ProductServiceImpl implements ProductService {
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), total);
         java.util.List<ProductDTO> content = start <= end ? dtos.subList(start, end) : java.util.List.of();
+        log.info("Products creados mediante saveAll: {} total size", products.size());
         return new PageImpl<>(content, pageable, total);
     }
 
@@ -119,6 +125,8 @@ public class ProductServiceImpl implements ProductService {
 
         deleteFiles(productDB.getPathImages());
         deleteFiles(productDB.getPathDocuments());
+
+        log.info("Product eliminado: {}", id);
 
         repository.delete(productDB);
     }

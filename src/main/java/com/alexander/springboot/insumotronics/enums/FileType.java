@@ -6,5 +6,6 @@ public enum FileType {
     JPEG,
     MP4,
     PDF,
+    SVG,
     UNKNOWN;
 }
