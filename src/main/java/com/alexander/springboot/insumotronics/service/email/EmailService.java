@@ -6,4 +6,3 @@ public interface EmailService {
     void sendConfirmPurchase(String to, String username, String message) throws MessagingException;
     void sendCancelPurchase(String to, String username, String message) throws MessagingException;
 }
-

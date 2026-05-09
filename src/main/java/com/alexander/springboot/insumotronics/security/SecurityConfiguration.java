@@ -20,13 +20,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -71,18 +65,13 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Lista base de orígenes permitidos
-        List<String> allowedOrigins = new ArrayList<>(Arrays.asList(
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:5173",
-                "http://127.0.0.1:5173"
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:[*]",
+                "http://127.0.0.1:[*]",
+                "http://192.168.*.*:[*]",
+                "https://tu-futuro-frontend.netlify.app"
         ));
 
-        // Agregar IPs locales automáticamente
-        allowedOrigins.addAll(getLocalNetworkIPs());
-
-        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -90,41 +79,6 @@ public class SecurityConfiguration {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
-    }
-
-    /**
-     * Método para detectar automáticamente las IPs locales de la red
-     */
-    private List<String> getLocalNetworkIPs() {
-        List<String> localIPs = new ArrayList<>();
-
-        try {
-            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-
-            while (networkInterfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = networkInterfaces.nextElement();
-
-                // Solo interfaces activas y no loopback
-                if (networkInterface.isUp() && !networkInterface.isLoopback()) {
-                    Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
-
-                    while (addresses.hasMoreElements()) {
-                        InetAddress address = addresses.nextElement();
-                        String ip = address.getHostAddress();
-
-                        // Solo IPv4 y no localhost
-                        if (ip.contains(".") && !ip.startsWith("127.")) {
-                            localIPs.add("http://" + ip + ":3000");
-                            localIPs.add("http://" + ip + ":5173");
-                        }
-                    }
-                }
-            }
-        } catch (SocketException e) {
-            System.err.println("Error detecting local network IPs: " + e.getMessage());
-        }
-
-        return localIPs;
     }
 
     @Bean
