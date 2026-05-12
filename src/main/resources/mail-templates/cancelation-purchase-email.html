@@ -3,49 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cancelación de Pedido - Insumotronics</title>
+    <title>Cancelación de Reserva - CompSTOCK</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
+            background-color: #f8fafc;
         }
         .container {
             max-width: 600px;
-            margin: 20px auto;
+            margin: 40px auto;
             background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             overflow: hidden;
+            border: 1px solid #e2e8f0;
         }
         .header {
-            background-color: #dc3545;
+            background-color: #0f172a;
             color: #ffffff;
-            padding: 20px;
+            padding: 30px 20px;
             text-align: center;
         }
         .header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 28px;
+            letter-spacing: 2px;
+            font-family: 'Georgia', serif;
+        }
+        .header p {
+            margin: 10px 0 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #94a3b8;
         }
         .content {
-            padding: 30px;
-            color: #333333;
+            padding: 40px 30px;
+            color: #1e293b;
+            text-align: center;
         }
         .content h2 {
-            color: #dc3545;
+            color: #ef4444;
             margin-top: 0;
+            font-size: 24px;
+            font-family: 'Georgia', serif;
         }
         .content p {
             line-height: 1.6;
+            color: #475569;
+            font-size: 16px;
+        }
+        .highlight {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 25px 0;
+            color: #991b1b;
+            text-align: left;
+            font-weight: 500;
         }
         .footer {
-            background-color: #f8f9fa;
+            background-color: #f8fafc;
             padding: 20px;
             text-align: center;
-            color: #666666;
-            font-size: 14px;
+            color: #94a3b8;
+            font-size: 12px;
+            border-top: 1px solid #f1f5f9;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
         .footer p {
             margin: 0;
@@ -55,19 +83,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Insumotronics</h1>
-            <p>Tu tienda de componentes electrónicos</p>
+            <h1>CompSTOCK</h1>
+            <p>Plataforma Académica</p>
         </div>
         <div class="content">
-            <h2>Pedido Cancelado</h2>
-            <p>Hola <span th:text="${username}"></span>,</p>
-            <p>Lamentamos informarte que tu pedido ha sido cancelado por el administrador.</p>
-            <p th:text="${message}"></p>
-            <p>Esperamos poder atenderte en futuras ocasiones.</p>
+            <h2>Reserva Cancelada</h2>
+            <p>Hola <strong><span th:text="${username}"></span></strong>,</p>
+            <p>Te informamos que ha habido un cambio de estado en tu reserva reciente por parte de la administración.</p>
+            <div class="highlight">
+                <p th:text="${message}" style="margin: 0;"></p>
+            </div>
+            <p>Si tienes alguna duda sobre esta cancelación, te invitamos a acercarte al encargado de inventario del laboratorio.</p>
         </div>
         <div class="footer">
-            <p>&copy; 2026 Insumotronics.</p>
-            <!--<p>Visítanos en <a href="https://www.insumotronics.com" style="color: #007bff;">www.insumotronics.com</a></p> -->
+            <p>&copy; 2026 Plataforma de Gestión CompSTOCK.</p>
         </div>
     </div>
 </body>

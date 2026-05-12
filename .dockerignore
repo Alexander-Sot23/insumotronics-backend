@@ -1,7 +1,7 @@
 target
-build
 .git
 .gitignore
 README.md
-Dockerfile
+*.log
 .dockerignore
+Dockerfile

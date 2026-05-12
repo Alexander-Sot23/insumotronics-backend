@@ -5,7 +5,11 @@ package com.alexander.springboot.insumotronics.controller.storage;
  */
 
 import com.alexander.springboot.insumotronics.service.storage.FileStorageService;
-import org.springframework.core.io.Resource;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,14 +18,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/api/student/files")
 public class FileManagerController {
 
+    private static final Logger log = LoggerFactory.getLogger(FileManagerController.class);
     private final FileStorageService fileStorageService;
+    private final OkHttpClient httpClient;
 
     public FileManagerController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
+        this.httpClient = new OkHttpClient();
     }
 
     /**
@@ -30,7 +39,7 @@ public class FileManagerController {
     @GetMapping("/view-file")
     public ResponseEntity<String> viewFile(@RequestParam("fileName") String fileName) {
         try {
-            // URL válida por 60 minutos (ajusta según necesites)
+            // URL válida por 60 minutos
             String presignedUrl = fileStorageService.getPresignedUrl(fileName, 60);
 
             return ResponseEntity.ok()
@@ -38,37 +47,52 @@ public class FileManagerController {
                     .body(presignedUrl);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @GetMapping("/download-file")
-    public ResponseEntity<Resource> downloadFile(@RequestParam("fileName") String fileName) {
-        try {
-            String presignedUrl = fileStorageService.getPresignedUrl(fileName, 10); // 10 minutos es suficiente para descarga
-
-            // Redirigimos al cliente a la URL de MinIO
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.LOCATION, presignedUrl)
-                    .build();
-
-        } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al generar URL de visualización para {}: {}", fileName, e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }
 
     /**
-     * Método auxiliar para determinar el tipo de archivo
+     * Actúa como un proxy para descargar el archivo desde Supabase.
      */
-    private MediaType determineMediaType(String fileName) {
-        String lower = fileName.toLowerCase();
-        if (lower.endsWith(".png")) return MediaType.IMAGE_PNG;
-        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return MediaType.IMAGE_JPEG;
-        if (lower.endsWith(".pdf")) return MediaType.APPLICATION_PDF;
-        if (lower.endsWith(".mp4")) return MediaType.parseMediaType("video/mp4");
-        if (lower.endsWith(".svg")) return MediaType.parseMediaType("image/svg+xml");
-        return MediaType.APPLICATION_OCTET_STREAM;
+    @GetMapping("/download-file")
+    public ResponseEntity<byte[]> downloadFile(@RequestParam("fileName") String fileName) {
+        try {
+            // 1. Obtener la URL firmada de Supabase
+            String presignedUrl = fileStorageService.getPresignedUrl(fileName, 5);
+            String originalName = fileStorageService.extractOriginalFilename(fileName);
+
+            log.info("Iniciando proxy de descarga para: {} (Original: {})", fileName, originalName);
+
+            // 2. Solicitar los bytes a Supabase
+            Request request = new Request.Builder()
+                    .url(presignedUrl)
+                    .get()
+                    .build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    log.error("Supabase respondió con error al intentar descargar {}: {}", fileName, response.code());
+                    return ResponseEntity.status(response.code()).build();
+                }
+
+                byte[] fileBytes = response.body().bytes();
+                String contentType = response.header("Content-Type", "application/octet-stream");
+
+                // 3. Devolver los bytes directamente al cliente con los headers correctos
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + originalName + "\"")
+                        .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                        .body(fileBytes);
+            }
+
+        } catch (IOException e) {
+            log.error("Error de E/S al descargar archivo {}: {}", fileName, e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        } catch (Exception e) {
+            log.error("Error inesperado al descargar archivo {}: {}", fileName, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
     }
 }

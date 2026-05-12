@@ -41,14 +41,15 @@ public class Product {
     private ProductCategory category;
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "product_path_images", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "path_image")
-    private List<String> pathImages;
+    @CollectionTable(name = "product_image_urls", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url", length = 1024)
+    private List<String> imageUrls;
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "product_path_documents", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "path_document")
-    private List<String> pathDocuments;
+    @CollectionTable(name = "product_document_urls", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "document_url", length = 1024)
+    private List<String> documentUrls;
+
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<ItemCart> itemCarts;

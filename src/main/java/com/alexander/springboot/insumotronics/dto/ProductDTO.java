@@ -30,9 +30,10 @@ public class ProductDTO {
     @NotNull
     private ProductCategory category;
 
-    private List<String> pathImages;
+    private List<String> imageUrls;
 
-    private List<String> pathDocuments;
+    private List<String> documentUrls;
+
 
     private LocalDateTime createdDate;
 

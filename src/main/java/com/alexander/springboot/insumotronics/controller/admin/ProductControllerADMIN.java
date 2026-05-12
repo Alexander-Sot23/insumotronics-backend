@@ -95,8 +95,8 @@ public class ProductControllerADMIN {
             throw new RuntimeException("Invalid JSON format: " + e.getMessage());
         }
 
-        List<String> imagesList = productM.pathImages() != null ? new ArrayList<>(productM.pathImages()) : new ArrayList<>();
-        List<String> documentsList = productM.pathDocuments() != null ? new ArrayList<>(productM.pathDocuments()) : new ArrayList<>();
+        List<String> imagesList = productM.imageUrls() != null ? new ArrayList<>(productM.imageUrls()) : new ArrayList<>();
+        List<String> documentsList = productM.documentUrls() != null ? new ArrayList<>(productM.documentUrls()) : new ArrayList<>();
 
         // Validación manual usando el validador de Spring
         Set<ConstraintViolation<CreateProductM>> violations = validator.validate(productM);
@@ -171,8 +171,8 @@ public class ProductControllerADMIN {
         ProductDTO existingProduct = service.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product with ID: " + id + ", not found."));
 
-        List<String> imagesList = productM.pathImages() != null ? new ArrayList<>(productM.pathImages()) : new ArrayList<>(existingProduct.getPathImages() != null ? existingProduct.getPathImages() : List.of());
-        List<String> documentsList = productM.pathDocuments() != null ? new ArrayList<>(productM.pathDocuments()) : new ArrayList<>(existingProduct.getPathDocuments() != null ? existingProduct.getPathDocuments() : List.of());
+        List<String> imagesList = productM.imageUrls() != null ? new ArrayList<>(productM.imageUrls()) : new ArrayList<>(existingProduct.getImageUrls() != null ? existingProduct.getImageUrls() : List.of());
+        List<String> documentsList = productM.documentUrls() != null ? new ArrayList<>(productM.documentUrls()) : new ArrayList<>(existingProduct.getDocumentUrls() != null ? existingProduct.getDocumentUrls() : List.of());
 
         try{
             // Validar TODOS los archivos antes de guardarlos

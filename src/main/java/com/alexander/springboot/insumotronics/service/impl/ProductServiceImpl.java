@@ -58,9 +58,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO create(CreateProductM productM) {
-        Product product = convertToModel(productM);
-        log.info ("Product creado: {}", product.getId());
-        return convertToDTO(repository.save(product));
+        Product productDB = repository.save(convertToModel(productM));
+        log.info("Product creado: {}", productDB.getId());
+        return convertToDTO(repository.save(productDB));
     }
 
     @Override
@@ -77,8 +77,8 @@ public class ProductServiceImpl implements ProductService {
         int total = dtos.size();
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), total);
-        java.util.List<ProductDTO> content = start <= end ? dtos.subList(start, end) : java.util.List.of();
-        log.info("Products creados mediante saveAll: {} total size", products.size());
+        List<ProductDTO> content = start <= end ? dtos.subList(start, end) : List.of();
+        log.info("Products creados mediante saveAll: {} total", products.size());
         return new PageImpl<>(content, pageable, total);
     }
 
@@ -87,26 +87,33 @@ public class ProductServiceImpl implements ProductService {
         Product productDB = repository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product with ID: " + id + ", not found."));
 
-        List<String> existingImages = productDB.getPathImages() != null ? new ArrayList<>(productDB.getPathImages()) : new ArrayList<>();
-        List<String> existingDocuments = productDB.getPathDocuments() != null ? new ArrayList<>(productDB.getPathDocuments()) : new ArrayList<>();
+        List<String> existingImages = productDB.getImageUrls() != null
+                ? new ArrayList<>(productDB.getImageUrls()) : new ArrayList<>();
+        List<String> existingDocuments = productDB.getDocumentUrls() != null
+                ? new ArrayList<>(productDB.getDocumentUrls()) : new ArrayList<>();
 
-        List<String> newImages = productM.pathImages() != null ? productM.pathImages() : existingImages;
-        List<String> newDocuments = productM.pathDocuments() != null ? productM.pathDocuments() : existingDocuments;
+        // Las nuevas listas de URLs vienen del request; si no se envían, conservar las existentes
+        List<String> newImages = productM.imageUrls() != null
+                ? productM.imageUrls() : existingImages;
+        List<String> newDocuments = productM.documentUrls() != null
+                ? productM.documentUrls() : existingDocuments;
 
-        List<String> removedImages = getRemovedFiles(existingImages, newImages);
-        List<String> removedDocuments = getRemovedFiles(existingDocuments, newDocuments);
+        // Eliminar del storage los archivos que ya no están en la nueva lista
+        List<String> removedImages = getRemovedUrls(existingImages, newImages);
+        List<String> removedDocuments = getRemovedUrls(existingDocuments, newDocuments);
 
-        deleteFiles(removedImages);
-        deleteFiles(removedDocuments);
+        deleteFilesFromStorage(removedImages);
+        deleteFilesFromStorage(removedDocuments);
 
         productDB.setName(productM.name());
         productDB.setPrice(productM.price());
         productDB.setStock(productM.stock());
         productDB.setCategory(productM.category());
-        productDB.setPathImages(new ArrayList<>(newImages));
-        productDB.setPathDocuments(new ArrayList<>(newDocuments));
+        productDB.setImageUrls(new ArrayList<>(newImages));
+        productDB.setDocumentUrls(new ArrayList<>(newDocuments));
 
         repository.save(productDB);
+        log.info("Product actualizado: {}", id);
         return convertToDTO(productDB);
     }
 
@@ -123,62 +130,70 @@ public class ProductServiceImpl implements ProductService {
         Product productDB = repository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product with ID: " + id + ", not found."));
 
-        deleteFiles(productDB.getPathImages());
-        deleteFiles(productDB.getPathDocuments());
-
-        log.info("Product eliminado: {}", id);
+        // Eliminar todos los archivos asociados al producto de Supabase Storage
+        deleteFilesFromStorage(productDB.getImageUrls());
+        deleteFilesFromStorage(productDB.getDocumentUrls());
 
         repository.delete(productDB);
+        log.info("Product eliminado: {}", id);
     }
 
-    private void deleteFiles(List<String> fileNames) {
-        if (fileNames == null || fileNames.isEmpty()) {
-            return;
-        }
-        for (String fileName : fileNames) {
+    /**
+     * Elimina archivos del storage dado su URL completa.
+     * Las URLs que no corresponden al patrón de Supabase se ignoran (logs de advertencia).
+     */
+    private void deleteFilesFromStorage(List<String> fileUrls) {
+        if (fileUrls == null || fileUrls.isEmpty()) return;
+        for (String fileUrl : fileUrls) {
             try {
-                storageService.deleteFile(fileName);
+                boolean deleted = storageService.deleteFile(fileUrl);
+                if (!deleted) {
+                    log.warn("No se pudo eliminar el archivo: {}", fileUrl);
+                }
             } catch (IOException e) {
-                throw new RuntimeException("Error deleting file '" + fileName + "'", e);
+                // No lanzar excepción para no bloquear la operación principal
+                log.error("Error al eliminar archivo '{}' del storage: {}", fileUrl, e.getMessage());
             }
         }
     }
 
-    private List<String> getRemovedFiles(List<String> existing, List<String> keep) {
-        if (existing == null) {
-            return new ArrayList<>();
-        }
-        if (keep == null) {
-            return new ArrayList<>();
-        }
+    /**
+     * Devuelve las URLs que estaban en la lista existente pero ya no están en la nueva.
+     */
+    private List<String> getRemovedUrls(List<String> existing, List<String> keep) {
+        if (existing == null || existing.isEmpty()) return new ArrayList<>();
+        if (keep == null) return new ArrayList<>(existing);
         return existing.stream()
-                .filter(fileName -> !keep.contains(fileName))
+                .filter(url -> !keep.contains(url))
                 .toList();
     }
 
-    private ProductDTO convertToDTO(Product product){
+    // =========================================================================
+    // CONVERSIONES
+    // =========================================================================
+
+    private ProductDTO convertToDTO(Product product) {
         return new ProductDTO(
                 product.getId(),
                 product.getName(),
                 product.getPrice(),
                 product.getStock(),
                 product.getCategory(),
-                product.getPathImages(),
-                product.getPathDocuments(),
+                product.getImageUrls(),
+                product.getDocumentUrls(),
                 product.getCreatedDate(),
                 product.getUpdatedDate()
         );
     }
 
-    private Product convertToModel(CreateProductM productM){
+    private Product convertToModel(CreateProductM productM) {
         Product product = new Product();
         product.setName(productM.name());
         product.setPrice(productM.price());
         product.setStock(productM.stock());
         product.setCategory(productM.category());
-        product.setPathImages(productM.pathImages() != null ? productM.pathImages() : new ArrayList<>());
-        product.setPathDocuments(productM.pathDocuments() != null ? productM.pathDocuments() : new ArrayList<>());
+        product.setImageUrls(productM.imageUrls() != null ? productM.imageUrls() : new ArrayList<>());
+        product.setDocumentUrls(productM.documentUrls() != null ? productM.documentUrls() : new ArrayList<>());
         return product;
     }
 }
-

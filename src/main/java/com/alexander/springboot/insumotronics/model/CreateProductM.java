@@ -21,7 +21,7 @@ public record CreateProductM(
         @NotNull
         ProductCategory category,
 
-        List<String> pathImages,
+        List<String> imageUrls,
 
-        List<String> pathDocuments) {
+        List<String> documentUrls) {
 }
