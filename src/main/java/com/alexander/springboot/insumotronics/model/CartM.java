@@ -12,4 +12,3 @@ public record CartM(
         LocalDateTime creationDate,
         LocalDateTime updateDate) {
 }
-

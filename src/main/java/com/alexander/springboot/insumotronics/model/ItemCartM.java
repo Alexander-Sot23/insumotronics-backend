@@ -13,4 +13,3 @@ public record ItemCartM(
         LocalDateTime creationDate,
         LocalDateTime updateDate) {
 }
-

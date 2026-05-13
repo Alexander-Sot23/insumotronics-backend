@@ -15,4 +15,3 @@ public record CreateItemCartM(
         @Min(1)
         int quantity) {
 }
-

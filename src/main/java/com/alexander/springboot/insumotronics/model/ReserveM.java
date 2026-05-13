@@ -15,4 +15,3 @@ public record ReserveM(
         LocalDateTime creationDate,
         LocalDateTime updateDate) {
 }
-

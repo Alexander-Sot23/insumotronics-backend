@@ -8,4 +8,3 @@ public record CreateCartM(
         @NotNull
         UUID myUserId) {
 }
-
