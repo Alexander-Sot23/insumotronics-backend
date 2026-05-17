@@ -20,10 +20,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -89,18 +88,22 @@ public class LoginController {
                 // Generar token con el code
                 String token = jwtService.generateToken(adminUser);
 
-                // Crear respuesta JSON con el token
+                // Crear cookie HttpOnly
+                ResponseCookie cookie = ResponseCookie.from("jwt", token)
+                        .httpOnly(true)
+                        .secure(true)
+                        .path("/")
+                        .maxAge(24 * 60 * 60) // 1 día de vida
+                        .sameSite("Lax")
+                        .build();
+
+                // Crear respuesta JSON sin el token
                 Map<String, Object> response = new HashMap<>();
-                response.put("token", token);
                 response.put("message", "Login successful");
-                response.put("code", adminUser.getCode());
                 response.put("name", adminUser.getName() + " " +  adminUser.getLastname());
-                response.put("email", adminUser.getEmail());
                 response.put("userId", adminUser.getId());
                 response.put("role", adminUser.getRole());
-                response.put("status", adminUser.getStatus());
-                response.put("firstLogin", adminUser.getFirstLogin());
-                response.put("lastLogin", adminUser.getLastLogin());
+                response.put("code", adminUser.getCode());
 
                 if(adminUser.getFirstLogin()==null){
                     adminUser.setFirstLogin(LocalDateTime.now());
@@ -112,7 +115,9 @@ public class LoginController {
 
                 log.info("Usuario {} loggeado con exito", adminUser.getCode());
 
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                        .body(response);
             } else {
                 log.warn("Usuario {} intentando iniciar sesion", adminUser.getCode());
                 throw new UsernameNotFoundException("Credenciales invalidas.");
@@ -124,6 +129,44 @@ public class LoginController {
             log.error("Error al iniciar sesion {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        ResponseCookie cookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0) // Expira inmediatamente
+                .sameSite("Lax")
+                .build();
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Logout successful");
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(response);
+    }
+
+    @GetMapping("/auth/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "No autenticado"));
+        }
+
+        String userCode = authentication.getName();
+        var user = myUserRepository.findByCode(userCode)
+                .orElseThrow(() -> new MyUserNotFoundException("Usuario no encontrado"));
+
+        // Devolvemos la misma estructura que en el login
+        Map<String, Object> response = new HashMap<>();
+        response.put("name", user.getName() + " " + user.getLastname());
+        response.put("userId", user.getId());
+        response.put("role", user.getRole());
+        response.put("code", user.getCode());
+
+        return ResponseEntity.ok(response);
     }
 
 }

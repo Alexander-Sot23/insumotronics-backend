@@ -42,7 +42,7 @@ public class SecurityConfiguration {
                     registry.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
 
                     // Rutas públicas
-                    registry.requestMatchers("/api/login/**").permitAll();
+                    registry.requestMatchers("/api/login/**", "/api/logout").permitAll();
 
                     // Rutas de student
                     registry.requestMatchers("/api/student/**").hasAnyRole("ADMIN","TEACHER","STUDENT");
