@@ -94,7 +94,7 @@ public class LoginController {
                         .secure(true)
                         .path("/")
                         .maxAge(24 * 60 * 60) // 1 día de vida
-                        .sameSite("Lax")
+                        .sameSite("none")
                         .build();
 
                 // Crear respuesta JSON sin el token
